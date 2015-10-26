@@ -1,0 +1,39 @@
+
+pts_perRuY = 0.1       #Rushing Yards 
+pts_perRuTD = 6        #Rushing Touchdowns
+pts_perPaY = 0.04      #Passing Yards 
+pts_perPaTD = 4        #Passing Touchdowns 
+pts_perI = -1          #Interceptions
+pts_perReY = 0.1       #Receiving Yards 
+pts_perReTD = 6        #Receiving Touchdowns
+pts_perRe = 0.5        #Receptions
+pts_perKRTD = 6        #Kick-Return Touchdowns
+pts_perPRTD = 6        #Punt-Return Touchdowns
+pts_perFUL = -2        #Fumbles Lost
+pts_perFUTD = 6        #Own Fumbles Recovered Touchdowns 
+pts_per2PCS = 2        #Two-Point Conversions Scored 
+pts_per2PCP = 2        #Two-Point Conversion Passes 
+pts_perFGu20 = 3       #Field-Goals From 0-19 Yards
+pts_perFGu30 = 3       #Field-Goals From 20-29 Yards
+pts_perFGu40 = 3       #Field-Goals From 30-39 Yards 
+pts_perFGu50 = 4       #Field-Goals From 40-49 Yards
+pts_perFGo50 = 5       #Field-Goals From 50+ Yards
+pts_perPATP = 1        #Extra-Point Conversions
+pts_perDES = 1         #Defense Sacks
+pts_perDEFR = 2        #Opponent-Fumbles Recovered
+pts_perDERTD = 6       #Interception Return Touchdowns
+pts_perDEFRTD = 6      #Fumble Return Touchdowns
+pts_perDEBRTD = 6      #Blocked Kick Return Touchdowns
+pts_perDEXPR = 2       #Extra Points Return
+pts_perDERTD = 6       #Kickoff Return Touchdowns
+pts_perDESF = 2        #Safeties 
+pts_perDEB = 2         #Blocked Kicks
+pts_perDEI = 2         #Defensive Interceptions Made 
+
+# These are a little different
+pts_perDEPA0 = 10      #0 Defensive Points Allowed 
+pts_perDEPA1to6 = 7    #1-6 Defensive Points Allowed
+pts_perDEPA7to13 = 4   #7-13 Defensive Points Allowed
+pts_perDEPA14to20 = 1  #14-20 Defensive Points Allowed
+pts_perDEPA28to34 = -1 #28-34 Points Allowed 
+pts_perDEPA35plus = -4 #35+ Points Allowed 
