@@ -12,8 +12,8 @@ Fanduel_points <- function(df) {
     df$pts_PRTD = pts_perPRTD * df$PRTD       #Punt-Return Touchdowns
     df$pts_FUL = pts_perFUL * df$FUL       #Fumbles Lost
     df$pts_FUTD = pts_perFUTD * df$FUTD     #Own Fumbles Recovered Touchdowns 
-    df$pts_2PCS = pts_per2PCS * df$2PCS        #Two-Point Conversions Scored 
-    df$pts_2PCP = pts_per2PCP * df$2PCP        #Two-Point Conversion Passes 
+    df$pts_twoPCS = pts_pertwoPCS * df$twoPCS #Two-Point Conversions Scored 
+    df$pts_twoPCP = pts_pertwoPCP * df$twoPCP    #Two-Point Conversion Passes 
     df$pts_FGu20 = pts_perFGu20 * df$FGu20       #Field-Goals From 0-19 Yards
     df$pts_FGu30 = pts_perFGu30 * df$FGu30       #Field-Goals From 20-29 Yards
     df$pts_FGu40 = pts_perFGu40 * df$FGu40      #Field-Goals From 30-39 Yards 
