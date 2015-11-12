@@ -1,6 +1,6 @@
 # Fantasy Football- using a Bayesian approach to predict a fantasy football team
 
-##This continues to be a work in process
+##This continues to be a work in progress
 
 Here's where I am in the process
 
@@ -12,7 +12,7 @@ Here's where I am in the process
 
 4. Create a normal distribution based on the mean and standard deviation of projected points for each player. **NOT DONE**
 
-5. Create an optimatization engine to find the optimal fantasy football team.  [**DONE**](https://github.com/kimkraunz/fantasy_football/tree/master/R_scripts/projections)
+5. Create an optimatization engine to find the optimal fantasy football team.  [**DONE**](https://github.com/kimkraunz/fantasy_football/blob/master/R_scripts/Optimizer.R)
 
 6. Check accuracy of projections against actual points.  **NOT DONE**
 
