@@ -4,7 +4,7 @@
 
 Here's where I am in the process
 
-1. Scrape weekly projections from ESPN, FantasySharks, Fantasy Football Today, Numberfire, FantasyPros, and NFL [**DONE**](https://github.com/kimkraunz/fantasy_football/tree/master/R_scripts/projections)
+1. Scrape weekly projections from ESPN, FantasySharks, Fantasy Football Today, Numberfire, FantasyPros, and NFL [**MOSTLY DONE**](https://github.com/kimkraunz/fantasy_football/tree/master/R_scripts/projections)
 
 2. Convert projects to projected FanDuel fantasy points. **NOT DONE**
 
