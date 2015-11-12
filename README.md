@@ -12,7 +12,7 @@ Here's where I am in the process
 
 4. Create a normal distribution based on the mean and standard deviation of projected points for each player. **NOT DONE**
 
-5. Create an optimatization engine to find the optimal fantasy football team.  **DONE**
+5. Create an optimatization engine to find the optimal fantasy football team.  [**DONE**](https://github.com/kimkraunz/fantasy_football/tree/master/R_scripts/projections)
 
 6. Check accuracy of projections against actual points.  **NOT DONE**
 
