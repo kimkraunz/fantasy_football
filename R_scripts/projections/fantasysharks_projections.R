@@ -1,91 +1,159 @@
-# Not working - it doesn't look like I've changed it to weekly projections
+
 
 #Load libraries
-library("stringr")
-library("ggplot2")
-library("plyr")
+library(caret)
+library(lpSolve)
 
-#Suffix
-suffix <- "fs"
-
-http://www.fantasysharks.com/apps/Projections/WeeklyProjections.php?pos=QB&l=17
+# Week
+week <- 5
 
 #Download fantasy football projections from FantasySharks.com
-projections_fs <- read.csv("http://www.fantasysharks.com/apps/Projections/SeasonCSVProjections.php?l=11", stringsAsFactors = FALSE)
+#Download offense(minus kicker)
+projections_fs_of <- read.csv(paste("http://www.fantasysharks.com/apps/bert/forecasts/projections.php?csv=1&Sort=&Segment=53", week + 1, "&Position=97&scoring=17&League=-1&uid=4&uid2=&printable=", sep = ""), stringsAsFactors = FALSE)
 
-#Player position
-projections_fs$pos <- as.factor(projections_fs$Pos)
+#Download kicker
+projections_fs_k <- read.csv(paste("http://www.fantasysharks.com/apps/bert/forecasts/projections.php?csv=1&Sort=&Segment=53", week + 1, "&Position=7&scoring=17&League=-1&uid=4&uid2=&printable=", sep = ""), stringsAsFactors = FALSE)
 
-#Keep only QB, RB, WR, TE
-projections_fs <- projections_fs[which(projections_fs$pos %in% c("QB","RB","WR","TE")),]
+#Download defense
+projections_fs_def <- read.csv(paste("http://www.fantasysharks.com/apps/bert/forecasts/projections.php?csv=1&Sort=&Segment=53", week + 1, "&Position=6&scoring=17&League=-1&uid=4&uid2=&printable=", sep = ""), stringsAsFactors = FALSE)
 
-#Player names
-projections_fs$name_fs <- paste(projections_fs$FirstName, projections_fs$LastName, sep=" ")
-projections_fs$name <- nameMerge(projections_fs$name_fs)
+#Read salaries
+setwd("/Users/kimkraunz/Documents/fantasy_football")
+salaries <- read.csv("Fanduel-NFL-2015-10-11-13183-players-list.csv", stringsAsFactors = FALSE)
 
-#Team
-projections_fs$team_fs <- as.character(projections_fs$Team)
+# Keep Player, Team, Position, Pts
+keep <- c("Player", "Team", "Position", "Pts")
+projections_fs_of <- projections_fs_of[, keep]
+projections_fs_k <- projections_fs_k[, keep]
+projections_fs_def <- projections_fs_def[, keep]
+projections_fs <- rbind(projections_fs_k, projections_fs_of, projections_fs_def)
 
-#Variables
-projections_fs$passAtt_fs <- NA
-projections_fs$passComp_fs <- projections_fs$PassCmps
-projections_fs$passYds_fs <- projections_fs$PassYards
-projections_fs$passTds_fs <- projections_fs$PassTDTotal
-projections_fs$passInt_fs <- projections_fs$PassInt
-projections_fs$rushAtt_fs <- projections_fs$RushAtt
-projections_fs$rushYds_fs <- projections_fs$RushYards
-projections_fs$rushTds_fs <- projections_fs$RushTDTotal
-projections_fs$rec_fs <- projections_fs$Receptions
-projections_fs$recYds_fs <- projections_fs$RecYards
-projections_fs$recTds_fs <- projections_fs$RecTDTotal
-projections_fs$fumbles_fs <- projections_fs$Fumbles
-projections_fs$returnTds_fs <- NA
-projections_fs$twoPts_fs <- NA
-projections_fs$pts_fs <- projections_fs$FantasyPts
+# Standardize team names
+if(length(projections_fs[projections_fs$Team == "SFO", "Team"]) > 0){projections_fs[projections_fs$Team == "SFO", "Team"] <- "SF"}
+projections_fs$Team<- as.character(projections_fs$Team)
+projections_fs$Team[projections_fs$Team == "NEP"] <- "NE"
+projections_fs$Team[projections_fs$Team == "GBP"] <- "GB"
+projections_fs$Team[projections_fs$Team == "KCC"] <- "KC"
+projections_fs$Team[projections_fs$Team == "NOR"] <- "NO"
+projections_fs$Team[projections_fs$Team == "SDC"] <- "SD"
+projections_fs$Team[projections_fs$Team == "TBB"] <- "TB"
+projections_fs$Team[projections_fs$Team == "ARZ"] <- "ARI"
 
-#Convert to numeric
-projections_fs[,c("passAtt_fs","passComp_fs","passYds_fs","passTds_fs","passInt_fs","rushAtt_fs","rushYds_fs","rushTds_fs","rec_fs","recYds_fs","recTds_fs","returnTds_fs","fumbles_fs","twoPts_fs","pts_fs")] <-
-  convert.magic(projections_fs[,c("passAtt_fs","passComp_fs","passYds_fs","passTds_fs","passInt_fs","rushAtt_fs","rushYds_fs","rushTds_fs","rec_fs","recYds_fs","recTds_fs","returnTds_fs","fumbles_fs","twoPts_fs","pts_fs")], "numeric")
 
-#Remove duplicate cases
-projections_fs[projections_fs$name %in% projections_fs[duplicated(projections_fs$name),"name"],]
 
-#Same name, different player
-projections_fs <- projections_fs[-which(projections_fs$name=="ALEXSMITH" & projections_fs$team_fs=="CIN"),]
-projections_fs <- projections_fs[-which(projections_fs$name=="ZACHMILLER" & projections_fs$team_fs=="CHI"),]
-#projections_fs <- projections_fs[-which(projections_fs$name=="RYANGRIFFIN" & projections_fs$pos=="QB"),]
+# Convert Team and Position to factors
+projections_fs$Position <- as.factor(projections_fs$Position)
+projections_fs$Team <- as.factor(projections_fs$Team)
+levels_fs_team <- levels(projections_fs$Team)
 
-#Same player, different position
+# Clean up names in projection df
+projections_fs$first_name <- lapply(strsplit(as.character(projections_fs$Player), ","), "[", 2)
+trim.leading <- function (x)  sub("^\\s+", "", x)
+projections_fs$first_name <- trim.leading(projections_fs$first_name)
 
-#Rename players
-if(length(projections_fs[projections_fs$name == "BENJAMINWATSON", "name"]) > 0){projections_fs[projections_fs$name == "BENJAMINWATSON", "name"] <- "BENJAMINWATSON"}
-if(length(projections_fs[projections_fs$name == "STEVIEJOHNSON", "name"]) > 0){projections_fs[projections_fs$name == "STEVIEJOHNSON", "name"] <- "STEVEJOHNSON"}
+projections_fs$last_name <- lapply(strsplit(as.character(projections_fs$Player), ","), "[", 1)
 
-#Calculate overall rank
-projections_fs$overallRank_fs <- rank(-projections_fs$pts_fs, ties.method="min")
+# Capitalize names
+projections_fs$first_name <- toupper(projections_fs$first_name)
+projections_fs$last_name <- toupper(projections_fs$last_name)
 
-#Calculate Position Rank
-projections_fs$positionRank_fs <- NA
-projections_fs[which(projections_fs$pos == "QB"), "positionRank_fs"] <- rank(-projections_fs[which(projections_fs$pos == "QB"), "pts_fs"], ties.method="min")
-projections_fs[which(projections_fs$pos == "RB"), "positionRank_fs"] <- rank(-projections_fs[which(projections_fs$pos == "RB"), "pts_fs"], ties.method="min")
-projections_fs[which(projections_fs$pos == "WR"), "positionRank_fs"] <- rank(-projections_fs[which(projections_fs$pos == "WR"), "pts_fs"], ties.method="min")
-projections_fs[which(projections_fs$pos == "TE"), "positionRank_fs"] <- rank(-projections_fs[which(projections_fs$pos == "TE"), "pts_fs"], ties.method="min")
+# merge names back together
+projections_fs$Name <- paste(projections_fs$last_name, projections_fs$first_name, sep = "")
 
-#Order variables in data set
-projections_fs <- projections_fs[,c(prefix, paste(varNames, suffix, sep="_"))]
+keep <- c("Name", "Team", "Position", "Pts")
+projections_fs <- projections_fs[, keep]
 
-#Order players by overall rank
-projections_fs <- projections_fs[order(projections_fs$overallRank_fs),]
-row.names(projections_fs) <- 1:dim(projections_fs)[1]
+# clean up salaries name
+salaries$First.Name <- toupper(salaries$First.Name)
+salaries$Last.Name <- toupper(salaries$Last.Name)
+salaries$Name <- paste(salaries$Last.Name, salaries$First.Name, sep = "")
 
-#Density Plot
-ggplot(projections_fs, aes(x=pts_fs)) + geom_density(fill="blue", alpha=.3) + xlab("Player's Projected Points") + ggtitle("Density Plot of FantasySharks Projected Points")
-ggsave(paste(getwd(),"/Figures/FantasySharks projections.jpg", sep=""), width=10, height=10)
-dev.off()
+keep <- c("Name",  "Team", "Position", "Salary")
+salaries <- salaries[, keep]
 
-#Save file
-save(projections_fs, file = paste(getwd(), "/Data/FantasySharks-Projections.RData", sep=""))
-write.csv(projections_fs, file=paste(getwd(), "/Data/FantasySharks-Projections.csv", sep=""), row.names=FALSE)
+# Standardize player names
+projections_fs$Name[projections_fs$Name == "BECKHAMODELL"] <- "BECKHAM JR.ODELL"
+projections_fs$Name[projections_fs$Name == "IVORYCHRIS"] <- "IVORYCHRISTOPHER"
+projections_fs$Name[projections_fs$Name == "BROWNPHILLY"] <- "BROWNCOREY (PHILLY)"
+projections_fs$Name[projections_fs$Name == "KEARSE JERMAINE"] <- "KEARSEJERMAINE"
+projections_fs$Name[projections_fs$Name == "MCCOWNJOSHUA"] <- "MCCOWNJOSH"
+projections_fs$Name[projections_fs$Name == "WHITTAKERFOZZY"] <- "WHITTAKERFOSWHITT"
+projections_fs$Name[projections_fs$Name == "HOUSLERROBERT"] <- "HOUSLERROB"
+projections_fs$Name[projections_fs$Name == "HOUSLERROBERT"] <- "HOUSLERROB"
+projections_fs$Name[projections_fs$Name == "RAMSST. LOUIS"] <- "RAMSST LOUIS"
 
-save(projections_fs, file = paste(getwd(), "/Data/Historical Projections/FantasySharks-Projections-", season, ".RData", sep=""))
-write.csv(projections_fs, file=paste(getwd(), "/Data/Historical Projections/FantasySharks-Projections-", season, ".csv", sep=""), row.names=FALSE)
+# convert team and positions to factors
+salaries$Team <- as.factor(salaries$Team)
+salaries$Position <- as.factor(salaries$Position)
+
+levels_salaries_Team <- levels(salaries$Team)
+
+# Check that factors for team are the same in projections and salaries DFs
+intersect(levels_salaries_Team, levels_fs_team)
+setdiff(levels_salaries_Team, levels_fs_team)
+
+# merge projections with salaries
+projections <- merge(projections_fs, salaries, by= c("Name", "Team"))
+keep <- c("Name", "Team", "Pts", "Salary", "Position.x")
+projections <- projections[, keep]
+colnames(projections) <- c("Player", "Team", "Points", "Cost", "Position")
+
+
+#check that all data included for salaries and projections
+setdiff(salaries$Name, projections$Player)
+setdiff(projections$Name, salaries$Name)
+setdiff(projections_fs$Name, projections$Player)
+
+# convert to numeric
+projections$Points <- as.numeric(projections$Points)
+projections$Cost <- as.numeric(projections$Cost)
+proj <- as.matrix(projections)
+
+# write projections to csv
+write.csv(projections, file = paste(getwd(), "/fantasy_football/projections_10082015.csv", sep = ""))
+
+Opt.squad<-function(dat,cost,n.d=1,n.k=1,n.qb=1,n.rb=2, n.wr=3, n.te=1) {
+    
+    ##Create dummy variables
+    fact.only<-projections[, which(sapply(projections, class)=="factor")]
+    non.fact<-projections[, which(sapply(projections, class)!="factor")]
+    dat.dummy<-model.matrix(~ Position, data=fact.only, contrasts.arg=list(Position=contrasts(fact.only$Position, contrasts=F)))
+                            
+    
+    dat2<-dat.dummy[,-1]
+    colnames(dat2)<-gsub("[^#A-Za-z0-9_]","",colnames(dat2))
+    dat<-cbind(non.fact,dat2)
+    ##Pick optimum team
+    f.obj <- dat$Points
+    nn<-length(f.obj)
+    num_play  <- rep(1,nn)
+    n.choose<-n.d+n.k+n.qb+n.rb+n.wr+n.te
+    f.con <- cbind(Cost=dat$Cost,dat[,colnames(dat) %in% colnames(dat2)],num_play)
+    f.con<-t(f.con)
+    f.dir <- c("<=","=","=","=","=","=", "=", "=")
+    f.rhs <- c(cost,n.d,n.k,n.qb,n.rb,n.te,n.wr,n.choose)
+
+    out1  <- lp("max", f.obj, f.con, f.dir, f.rhs,all.bin=TRUE)
+    
+    if (out1$status == 2) {
+        print ("There was no optimal solution. Try a different approach or increase/decrease your total cost")
+    } else {
+        sol1  <- out1$solution
+        total1 <- out1$objval 
+        ###Take numbers and take out 
+        pick1a <- rep(0,15)
+        k     <- 0
+        f.obj2<-f.obj
+        for (j in 1:nn) {
+            if (sol1[j]==1) {
+                k        <- k+1
+                pick1a[k] <- j
+            }
+        }
+        final.pick<-dat[pick1a, 1:3]
+        print(total1)
+        final.pick
+    }
+}
+
+Opt.squad(proj, 60000)
