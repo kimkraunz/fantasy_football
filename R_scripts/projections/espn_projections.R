@@ -1,4 +1,7 @@
-### NOT WORKING
+### TO DO:
+### 1. Convert data types (convert.magic?)
+### 2. Calculate FD points
+### 3. Figure out V1:V14???
 
 
 library("XML")
@@ -7,12 +10,12 @@ library("plyr")
 library("data.table")
 
 season = 2015
-week = 6
+week = 14
 
 # Create urls
-espn_base_url <- paste0("http://games.espn.go.com/ffl/tools/projections?&proTeamId=null&scoringPeriodId=", week, "&seasonId=", season, "&startIndex=")
+espn_base_url <- paste0("http://games.espn.go.com/ffl/tools/projections?&proTeamId=null&scoringPeriodId=", week, "&seasonId=", season)
 espn_pos <- list(QB=0, RB=2, WR=4, TE=6, K=17, D=16)
-espn_pages <- c("0", "40", "80")
+espn_pages <- c("0", "40", "80", "120")
 espn_urls <- paste0(espn_base_url, "&slotCategoryId=", rep(espn_pos, each=length(espn_pages)), "&startIndex=", espn_pages)
 
 #Scrape - if error then skips
@@ -42,7 +45,7 @@ for(i in 1:length(espn_list)) {
             setnames(espn_list[[i]], c(te_colnames, "Position"))
         } else if(unique(espn_list[[i]][,pos]) == "K"){
             setnames(espn_list[[i]], c(k_colnames, "Position"))
-        } else if(unique(espn_list[[i]][,pos]) == "D"){
+        } else if(unique(espn_list[[i]][,pos]) == "DST"){
             setnames(espn_list[[i]], c(d_colnames, "Position"))
         }
     }
@@ -53,33 +56,31 @@ projections_espn <- rbindlist(espn_list, use.names = TRUE, fill = TRUE)
 
 #Replace symbols with value of zero
 projections_espn[which(Catch_Attempts == "--/--"), Catch_Attempts := "0/0"]
-projections_espn[which(pass_yards == "--"), pass_yards := "0"]
-projections_espn[which(pass_TDs == "--"), pass_TDs := "0"]
-projections_espn[which(int == "--"), int := "0"]
-projections_espn[which(rushs == "--"), rushs := "0"]
-projections_espn[which(rush_yards == "--"), rush_yards := "0"]
-projections_espn[which(rush_TDS == "--"), rush_TDs := "0"]
-projections_espn[which(receptions == "--"), receptions := "0"]
-projections_espn[which(recept_yds == "--"), recept_yds := "0"]
-projections_espn[which(recept_tds == "--"), recept_tds := "0"]
-projections_espn[which(pts == "--"), pts := "0"]
+projections_espn[which(PaY == "--"), PaY := "0"]
+projections_espn[which(PaTD == "--"), PaTD := "0"]
+projections_espn[which(I == "--"), I := "0"]
+projections_espn[which(RuAttempts == "--"), RuAttempts := "0"]
+projections_espn[which(RuY == "--"), RuY := "0"]
+projections_espn[which(RuTD == "--"), RuTD := "0"]
+projections_espn[which(Re == "--"), Re := "0"]
+projections_espn[which(ReY == "--"), ReY := "0"]
+projections_espn[which(ReTD == "--"), ReTD := "0"]
+projections_espn[which(espn_fantasy_pts == "--"), espn_fantasy_pts := "0"]
 
 # Delete rows with either 0 projected points or NA
-projections_espn <- projections_espn[!is.na(projections_espn$pts),]
-projections_espn <- projections_espn[projections_espn$pts != 0,]
-
-#Separate pass completions from attempts
-projections_espn$attempts <- gsub("\\/.*", "", projections_espn$Catch_Attempts)
+projections_espn <- projections_espn[!is.na(projections_espn$espn_fantasy_pts),]
+projections_espn <- projections_espn[projections_espn$espn_fantasy_pts != 0,]
 
 # Strip Team from name
 projections_espn$Team <- lapply(strsplit(as.character(projections_espn$Player), ", "), "[", 2)
 
-# Remove POS and status from Team
-#projections_espn$Team <- lapply(strsplit(as.character(projections_espn$Team), " "), "[", 1)
-#projections_espn$Team <- gsub(" ", "", projections_espn$Team, perl = TRUE)
+
 
 # Remove Team and Pos from Player
 projections_espn$Player <- gsub(",.*", "", projections_espn$Player)
+
+# Remove Pos and Status from Team (space is not simply space)
+projections_espn$Team <- lapply(strsplit(as.character(projections_espn$Team), "\\s"), "[", 1)
 
 # Remove "D/DST" from Defensive Players
 projections_espn$Player <- str_replace_all(projections_espn$Player, fixed("D/ST"), "")
@@ -97,3 +98,26 @@ projections_espn$Player <- str_trim(projections_espn$Player, "left")
 
 # Remove special characters from player names
 projections_espn$Player <- gsub("[[:punct:]]", "", projections_espn$Player)
+
+# Remove columns from DF
+projections_espn <- subset(projections_espn, , -c(OPP, Time, Catch_Attempts, RuAttempts, first_name, last_name, V1:V14, pos))
+
+# Remove position and status from Team names
+projections_espn$Team <- lapply(strsplit(as.character(unlist(projections_espn$Team)), " "), "[", 1)
+
+# Convert lower case to upper case
+projections_espn$Team <- toupper(projections_espn$Team)
+
+# Change team name for consistency
+projections_espn$Team[projections_espn$Team == "WSH"] = "WAS"
+
+# Change data types- Can I use convert magic?
+#projections_espn$Team <- as.factor(projections_espn$Team)
+#conver.magic(projections_espn$Team, factor())
+
+# Compute Fanduel projected points
+
+# Add projection source
+projections_espn$proj.source <- "espn"
+
+# Save file to csv and R files
