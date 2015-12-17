@@ -1,36 +1,46 @@
-
+# Need to test- Fantasy Sharks website down
+# For loop for data cleaning
 
 #Load libraries
 library(caret)
 library(lpSolve)
 
 # Week
-week <- 5
+week <- 14
 
 #Download fantasy football projections from FantasySharks.com
+
 #Download offense(minus kicker)
-projections_fs_of <- read.csv(paste("http://www.fantasysharks.com/apps/bert/forecasts/projections.php?csv=1&Sort=&Segment=53", week + 1, "&Position=97&scoring=17&League=-1&uid=4&uid2=&printable=", sep = ""), stringsAsFactors = FALSE)
+projections_fs_of <- readHTMLTable(paste0("http://www.fantasysharks.com/apps/bert/forecasts/projections.php?League=-1&Position=97&scoring=17&Segment=", week + 531, "&uid=4", sep = ""), stringsAsFactors = FALSE)$toolData
 
 #Download kicker
-projections_fs_k <- read.csv(paste("http://www.fantasysharks.com/apps/bert/forecasts/projections.php?csv=1&Sort=&Segment=53", week + 1, "&Position=7&scoring=17&League=-1&uid=4&uid2=&printable=", sep = ""), stringsAsFactors = FALSE)
+projections_fs_k <- readHTMLTable(paste0("http://www.fantasysharks.com/apps/bert/forecasts/projections.php?League=-1&Position=7&scoring=17&Segment=", week + 531, "&uid=4", sep = ""), stringsAsFactors = FALSE)$toolData
 
 #Download defense
-projections_fs_def <- read.csv(paste("http://www.fantasysharks.com/apps/bert/forecasts/projections.php?csv=1&Sort=&Segment=53", week + 1, "&Position=6&scoring=17&League=-1&uid=4&uid2=&printable=", sep = ""), stringsAsFactors = FALSE)
+projections_fs_def <- read.csv(paste0("http://www.fantasysharks.com/apps/bert/forecasts/projections.php?League=-1&Position=6&scoring=17&Segment=", week + 531, "&uid=4", sep = ""), stringsAsFactors = FALSE)$toolData
 
-#Read salaries
-setwd("/Users/kimkraunz/Documents/fantasy_football")
-salaries <- read.csv("Fanduel-NFL-2015-10-11-13183-players-list.csv", stringsAsFactors = FALSE)
+# Clean up table
+# Make into for loop
+projections_fs_k <- projections_fs_k[2:nrow(projections_fs_k),]
+projections_fs_k <- projections_fs_k[!is.na(projections_fs_k$Opp),  ]
+projections_fs_k$Position <- "K"
 
 # Keep Player, Team, Position, Pts
-keep <- c("Player", "Team", "Position", "Pts")
+keep <- c("Player", "Tm", "Position", "Pts")
 projections_fs_of <- projections_fs_of[, keep]
 projections_fs_k <- projections_fs_k[, keep]
 projections_fs_def <- projections_fs_def[, keep]
+
+# Combine data frames
 projections_fs <- rbind(projections_fs_k, projections_fs_of, projections_fs_def)
 
+# Delete rows with either 0 projected points or NA
+projections_fs <- projections_fs[!is.na(projections_fs$Pts),]
+projections_fs <- projections_fs[projections_fs$Pts != 0,]
+
+
 # Standardize team names
-if(length(projections_fs[projections_fs$Team == "SFO", "Team"]) > 0){projections_fs[projections_fs$Team == "SFO", "Team"] <- "SF"}
-projections_fs$Team<- as.character(projections_fs$Team)
+projections_fs$Team <- as.character(projections_fs$Team)
 projections_fs$Team[projections_fs$Team == "NEP"] <- "NE"
 projections_fs$Team[projections_fs$Team == "GBP"] <- "GB"
 projections_fs$Team[projections_fs$Team == "KCC"] <- "KC"
@@ -40,13 +50,12 @@ projections_fs$Team[projections_fs$Team == "TBB"] <- "TB"
 projections_fs$Team[projections_fs$Team == "ARZ"] <- "ARI"
 
 
-
 # Convert Team and Position to factors
 projections_fs$Position <- as.factor(projections_fs$Position)
 projections_fs$Team <- as.factor(projections_fs$Team)
 levels_fs_team <- levels(projections_fs$Team)
 
-# Clean up names in projection df
+# Clean up names df
 projections_fs$first_name <- lapply(strsplit(as.character(projections_fs$Player), ","), "[", 2)
 trim.leading <- function (x)  sub("^\\s+", "", x)
 projections_fs$first_name <- trim.leading(projections_fs$first_name)
@@ -63,30 +72,15 @@ projections_fs$Name <- paste(projections_fs$last_name, projections_fs$first_name
 keep <- c("Name", "Team", "Position", "Pts")
 projections_fs <- projections_fs[, keep]
 
-# clean up salaries name
-salaries$First.Name <- toupper(salaries$First.Name)
-salaries$Last.Name <- toupper(salaries$Last.Name)
-salaries$Name <- paste(salaries$Last.Name, salaries$First.Name, sep = "")
-
-keep <- c("Name",  "Team", "Position", "Salary")
-salaries <- salaries[, keep]
-
 # Standardize player names
-projections_fs$Name[projections_fs$Name == "BECKHAMODELL"] <- "BECKHAM JR.ODELL"
+projections_fs$Name[projections_fs$Name == "BECKHAMODELL"] <- "BECKHAMJRODELL"
 projections_fs$Name[projections_fs$Name == "IVORYCHRIS"] <- "IVORYCHRISTOPHER"
-projections_fs$Name[projections_fs$Name == "BROWNPHILLY"] <- "BROWNCOREY (PHILLY)"
+projections_fs$Name[projections_fs$Name == "BROWNPHILLY"] <- "BROWNCOREY)"
 projections_fs$Name[projections_fs$Name == "KEARSE JERMAINE"] <- "KEARSEJERMAINE"
 projections_fs$Name[projections_fs$Name == "MCCOWNJOSHUA"] <- "MCCOWNJOSH"
 projections_fs$Name[projections_fs$Name == "WHITTAKERFOZZY"] <- "WHITTAKERFOSWHITT"
 projections_fs$Name[projections_fs$Name == "HOUSLERROBERT"] <- "HOUSLERROB"
-projections_fs$Name[projections_fs$Name == "HOUSLERROBERT"] <- "HOUSLERROB"
-projections_fs$Name[projections_fs$Name == "RAMSST. LOUIS"] <- "RAMSST LOUIS"
-
-# convert team and positions to factors
-salaries$Team <- as.factor(salaries$Team)
-salaries$Position <- as.factor(salaries$Position)
-
-levels_salaries_Team <- levels(salaries$Team)
+projections_fs$Name[projections_fs$Name == "RAMSST. LOUIS"] <- "RAMSSTLOUIS"
 
 # Check that factors for team are the same in projections and salaries DFs
 intersect(levels_salaries_Team, levels_fs_team)

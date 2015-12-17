@@ -1,4 +1,4 @@
-# Ready to calculate fantasy points and import salaries
+
 
 #Load libraries
 library("XML")
@@ -8,7 +8,7 @@ library("dplyr")
 #Functions
 source(paste(getwd(),"/fantasy_football/R_scripts/Functions.R", sep=""))
 
-week <- 7
+week <- 14
 
 #Download fantasy football projections from FFtoday.com
 qb_fftoday <- readHTMLTable(paste("http://www.fftoday.com/rankings/playerwkproj.php?Season=2015&GameWeek=", week, "&PosID=10&LeagueID=174798", sep = ""), stringsAsFactors = FALSE)[11]$'NULL'
@@ -53,11 +53,7 @@ k_fftoday$Pos <- as.factor("K")
 #Merge across positions
 projections_fftoday <- rbind.fill(qb_fftoday, rb_fftoday, wr_fftoday, te_fftoday, k_fftoday)
 
-projections_fftoday <- select(projections_fftoday, Player, Team, PaY, PaTD, I, RuY, RuTD, Points, Pos, Re, ReY, ReTD, FGu20, PATP)
-
-#Convert variables from character strings to numeric
-projections_fftoday[,c("PaY", "PaTD", "I", "RuY", "RuTD", "Points", "Re", "ReY", "ReTD", "FGu20", "PATP")] <- 
-    convert.magic(projections_fftoday[,c("PaY", "PaTD", "I", "RuY", "RuTD", "Points", "Re", "ReY", "ReTD", "FGu20", "PATP")], "numeric")
+projections_fftoday <- select(projections_fftoday, Player, Team, Pos, Points)
 
 #Player name, position, and team
 projections_fftoday$Player <- str_trim(str_sub(projections_fftoday$Player, start=2))
@@ -65,13 +61,8 @@ projections_fftoday$Player <- str_trim(str_sub(projections_fftoday$Player, start
 # Clean up names
 projections_fftoday <- convert.names(projections_fftoday)
 
-
-
-
+# Add source
+projections_fftoday$proj.source <- "fftoday"
 
 #Save file
-#save(projections_fftoday, file = paste(getwd(), "/Data/FFtoday-Projections.RData", sep=""))
-#write.csv(projections_fftoday, file=paste(getwd(), "/Data/FFtoday-Projections.csv", sep=""), row.names=FALSE)
-
-#save(projections_fftoday, file = paste(getwd(), "/Data/Historical Projections/FFtoday-Projections-", season, ".RData", sep=""))
-#write.csv(projections_fftoday, file=paste(getwd(), "/Data/Historical Projections/FFtoday-Projections-", season, ".csv", sep=""), row.names=FALSE)
+write.csv(projections_fftoday, file = paste0(getwd(), "/fantasy_football/projections_data/fftoday_projections_week", week, ".csv", sep = ""))

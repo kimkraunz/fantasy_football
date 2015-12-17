@@ -2,7 +2,7 @@
 ### 1. Convert data types (convert.magic?)
 ### 2. Calculate FD points
 ### 3. Figure out V1:V14???
-
+### 4. No defense?
 
 library("XML")
 library("stringr")
@@ -120,4 +120,5 @@ projections_espn$Team[projections_espn$Team == "WSH"] = "WAS"
 # Add projection source
 projections_espn$proj.source <- "espn"
 
-# Save file to csv and R files
+# Save file to csv
+write.csv(projections_fp, file = paste0(getwd(), "/fantasy_football/projections_data/espn_projections_week", week, ".csv", sep = ""))

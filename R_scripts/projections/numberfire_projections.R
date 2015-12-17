@@ -5,7 +5,7 @@ library("XML")
 library("stringr")
 library("dplyr")
 
-week = 7
+week = 14
 season = 2015
 
 nf_off <- readHTMLTable("http://www.numberfire.com/nfl/fantasy/fantasy-football-projections", stringsAsFactors = FALSE)$'complete-projection'
