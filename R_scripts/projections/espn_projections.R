@@ -85,6 +85,7 @@ projections_espn$Team <- lapply(strsplit(as.character(projections_espn$Team), "\
 # Remove "D/DST" from Defensive Players
 projections_espn$Player <- str_replace_all(projections_espn$Player, fixed("D/ST"), "")
 
+# Format names
 projections_espn$first_name <- lapply(strsplit(as.character(projections_espn$Player), " "), "[", 1)
 projections_espn$last_name <- lapply(strsplit(as.character(projections_espn$Player), " "), "[", 2)
 
@@ -121,4 +122,4 @@ projections_espn$Team[projections_espn$Team == "WSH"] = "WAS"
 projections_espn$proj.source <- "espn"
 
 # Save file to csv
-write.csv(projections_fp, file = paste0(getwd(), "/fantasy_football/projections_data/espn_projections_week", week, ".csv", sep = ""))
+write.csv(projections_espn, file = paste0(getwd(), "/fantasy_football/projections_data/espn_projections_week", week, ".csv", sep = ""))

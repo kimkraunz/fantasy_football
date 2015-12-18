@@ -29,11 +29,3 @@ pts_perDERTD = 6       #Kickoff Return Touchdowns
 pts_perDESF = 2        #Safeties 
 pts_perDEB = 2         #Blocked Kicks
 pts_perDEI = 2         #Defensive Interceptions Made 
-
-# These are a little different
-pts_perDEPA0 = 10      #0 Defensive Points Allowed 
-pts_perDEPA1to6 = 7    #1-6 Defensive Points Allowed
-pts_perDEPA7to13 = 4   #7-13 Defensive Points Allowed
-pts_perDEPA14to20 = 1  #14-20 Defensive Points Allowed
-pts_perDEPA28to34 = -1 #28-34 Points Allowed 
-pts_perDEPA35plus = -4 #35+ Points Allowed 

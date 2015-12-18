@@ -8,6 +8,11 @@ convert.magic <- function(obj, type){
     as.data.frame(out)
 }
 
+convert.magic <- function(obj, type){
+    out <- lapply(obj, function(x) FUN1(as.character(x)))
+    as.data.frame(out)
+}
+
 convert.names <- function(df) {
     # Seperates names into first and last names, converts them to upper case, pastes them together with last name first, and removes punctuation from names
     df$first_name <- lapply(strsplit(as.character(df$Player), " "), "[", 1)
@@ -22,3 +27,11 @@ convert.names <- function(df) {
     df <- select(df, -first_name, -last_name)
     return(df)
 }
+
+team.names <- function(df, column) {
+    df$column[df$column == "WSH", ] <<- "WAS"
+    return(df)
+}
+
+
+

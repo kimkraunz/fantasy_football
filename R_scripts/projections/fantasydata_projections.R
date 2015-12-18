@@ -7,6 +7,8 @@ library("data.table")
 week = 14
 season = 2015
 
+fantasydata_base <- "http://fantasydata.com/nfl-stats/fantasy-football-weekly-projections.aspx?fs=0&stype=0&sn=0&scope=1&w="
+
 # Scraping data and selecting columns
 fantasydata_qb <- readHTMLTable(paste0(fantasydata_base, week - 1, "&ew=", week - 1, "&s=&t=0&p=1&st=FantasyPoints&d=1&ls=FantasyPoints&live=false&pid=false&minsnaps=4"), as.data.frame = TRUE, stringsasfactors = FALSE, header = FALSE, skip.rows = 1)$StatsGrid
 
