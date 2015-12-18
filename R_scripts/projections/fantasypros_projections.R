@@ -3,8 +3,6 @@
 library("XML")
 library("stringr")
 library("dplyr")
-library(caret)
-library(lpSolve)
 
 qb_fp <- readHTMLTable("http://www.fantasypros.com/nfl/fanduel-cheatsheet.php?position=QB", stringsAsFactors = FALSE)$data
 rb_fp <- readHTMLTable("http://www.fantasypros.com/nfl/fanduel-cheatsheet.php?position=RB", stringsAsFactors = FALSE)$data
@@ -60,6 +58,9 @@ projections_fp$proj.source <- "fantasypros"
 
 projections_fp <- select(projections_fp, Player, Proj.Points, Team, pos)
 colnames(projections_fp) <- c("Player", "Points", "Team", "Position")
+
+# Add projection source
+projections_fp$proj.source <- "fantasypros"
 
 # write projected points to csv
 write.csv(projections_fp, file = paste0(getwd(), "/fantasy_football/projections_data/fp_projections_", Sys.Date(), ".csv", sep = ""))
